@@ -246,15 +246,20 @@ function fitMapToPoints(map,points,padding=30,maxZoom=18){
   });
 }
 
-function updateMiniMap(){
+function updateMiniMap(refit=false){
   if(!state.miniMap||!state.currentPosition||!state.pinPosition||!state.panorama)return;
-  const heading=norm360(state.panorama.getPov().heading||0);
+  const heading=state.panorama.getPov().heading||0;
   const planned=destinationPoint(state.currentPosition,heading,shotMetres());
+
   state.miniBall.setPosition(state.currentPosition);
   state.miniPin.setPosition(state.pinPosition);
   state.miniPinLine.setPath([state.currentPosition,state.pinPosition]);
   state.miniAimLine.setPath([state.currentPosition,planned]);
-  fitMapToPoints(state.miniMap,[state.currentPosition,state.pinPosition,planned],24,18);
+
+  if(refit){
+    fitMapToPoints(state.miniMap,[state.currentPosition,state.pinPosition,planned]);
+  }
+
   setRotatedMapHeading($('#miniMapRotator'),heading);
 }
 

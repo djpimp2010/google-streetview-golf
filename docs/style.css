@@ -45,3 +45,27 @@ body:has(.landing-screen.active){overflow:auto}.landing-screen{height:auto;min-h
 @media(max-width:680px){.hole-complete{padding:16px}.hole-complete-card{padding:27px 20px 23px;border-radius:20px}.hole-complete-flag{font-size:35px}}
 
 .hole-location{margin-top:7px;padding-top:7px;border-top:1px solid var(--line);font-size:10px;line-height:1.25;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#dce9de}
+
+/* v15: overscan the rotating satellite canvas.
+   The viewport stays the same size; the Google map itself is substantially larger,
+   centred, and clipped so rotation never exposes its corners. */
+.course-preview .map-wrap,
+.course-preview .mini-map-wrap,
+#miniMapViewport,
+#miniMapClip {
+  overflow:hidden;
+}
+
+#miniMapRotator{
+  position:absolute;
+  width:150%;
+  height:150%;
+  left:-25%;
+  top:-25%;
+  transform-origin:50% 50%;
+}
+
+#miniMap{
+  width:100% !important;
+  height:100% !important;
+}

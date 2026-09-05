@@ -16,7 +16,7 @@ function trackGolf(eventName, props={}){
     if(window.heap && typeof window.heap.track==="function"){
       window.heap.track(eventName,{
         app:"streetview-golf",
-        version:"v17",
+        version:"v18",
         ...props
       });
     }
@@ -380,7 +380,7 @@ async function swing(){
   const origin={...state.currentPosition};
   const intendedTarget=destinationPoint(origin,heading,intended);
   state.strokes++;
-  trackGolf("Golf - Shot Fired",{challenge:state.course?.code||null,hole:state.holeIndex+1,club:state.selectedClub,power:Number($("#power")?.value||0),distanceToPin:Math.round(distanceMetres(state.currentPosition,state.pinPosition)),strokes:state.strokes});$('#strokes').textContent=state.strokes;
+  trackGolf("Golf - Shot Fired",{challenge:state.course?.code||null,hole:state.holeIndex+1,club:state.selectedClub,power:Number($("#powerRange")?.value||0),distanceToPin:Math.round(distanceM(state.currentPosition,state.pinPosition)),strokes:state.strokes});$('#strokes').textContent=state.strokes;
   $('#statusText').textContent=`Shot ${state.strokes} — ${intended} m at ${Math.round(heading)}°`;
   playThwack();
   showShotCinematic(origin,heading,intendedTarget);

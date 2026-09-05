@@ -10,6 +10,19 @@ const state = {
   shotMap:null, shotBall:null, shotPin:null, shotPlanLine:null, shotActualLine:null
 };
 
+
+function trackGolf(eventName, props={}){
+  try{
+    if(window.heap && typeof window.heap.track==="function"){
+      window.heap.track(eventName,{
+        app:"streetview-golf",
+        version:"v17",
+        ...props
+      });
+    }
+  }catch(_){}
+}
+
 function worldHole(name,lat,lng,distance=650,heading=45,par=5){
   const location=holeLocation(name);
   return {name,town:location.town,country:location.country,tee:{lat,lng},pin:destinationPoint({lat,lng},heading,distance),par};
@@ -327,7 +340,8 @@ async function findOutdoorPano(pos, radii=[35,70,140,250]){
   throw new Error('NO_OUTDOOR_PANO');
 }
 
-function startCourse(code){state.course=makeCourse(code);state.holeIndex=0;state.results=[];ensureApi(()=>{show('game');setupStreetView();loadHole()})}
+function startCourse(code){
+  trackGolf("Golf - Game Started",{challenge:code});state.course=makeCourse(code);state.holeIndex=0;state.results=[];ensureApi(()=>{show('game');setupStreetView();loadHole()})}
 
 async function loadHole(){
   const hole=state.course.holes[state.holeIndex];
@@ -336,6 +350,7 @@ async function loadHole(){
   $('#par').textContent=hole.par;
   const loc=(hole.country&&hole.town)?{country:hole.country,town:hole.town}:holeLocation(hole.name);
   $('#holeLocation').textContent=`${loc.country} · ${loc.town}`;
+  trackGolf("Golf - Hole Started",{challenge:state.course?.code||null,hole:state.holeIndex+1,town:loc.town,country:loc.country,par:hole.par});
   $('#strokes').textContent='0';
   $('#statusText').textContent='Finding an outdoor tee…';$('#progressBar').style.width='0%';setShotEnabled(false);
   try{
@@ -364,7 +379,8 @@ async function swing(){
   const intended=shotMetres();
   const origin={...state.currentPosition};
   const intendedTarget=destinationPoint(origin,heading,intended);
-  state.strokes++;$('#strokes').textContent=state.strokes;
+  state.strokes++;
+  trackGolf("Golf - Shot Fired",{challenge:state.course?.code||null,hole:state.holeIndex+1,club:state.selectedClub,power:Number($("#power")?.value||0),distanceToPin:Math.round(distanceMetres(state.currentPosition,state.pinPosition)),strokes:state.strokes});$('#strokes').textContent=state.strokes;
   $('#statusText').textContent=`Shot ${state.strokes} — ${intended} m at ${Math.round(heading)}°`;
   playThwack();
   showShotCinematic(origin,heading,intendedTarget);
@@ -429,6 +445,9 @@ function playThwack(){try{const AC=window.AudioContext||window.webkitAudioContex
 function mulligan(){if(state.shotBusy||state.holeFinishing||!state.startPano)return;hideShotCinematic();state.strokes+=2;$('#strokes').textContent=state.strokes;state.currentPosition={...state.startPosition};state.panorama.setPano(state.startPano);state.panorama.setPov({heading:bearing(state.currentPosition,state.pinPosition),pitch:0});updateHud();toast('Back to the tee · +2')}
 function scoreLabel(score,par){const d=score-par;if(d<=-3)return'ALBATROSS';if(d===-2)return'EAGLE';if(d===-1)return'BIRDIE';if(d===0)return'PAR';return`+${d}`}
 function showHoleComplete(score){
+  const _hole=state.course?.holes?.[state.holeIndex];
+  const _loc=_hole?holeLocation(_hole.name):{town:null,country:null};
+  trackGolf("Golf - Hole Completed",{challenge:state.course?.code||null,hole:state.holeIndex+1,town:_loc.town,country:_loc.country,par:_hole?.par||null,strokes:state.strokes});
   if(!state.course)return;
   const hole=state.course.holes[state.holeIndex];
   const finalHole=state.holeIndex===state.course.holes.length-1;
@@ -447,7 +466,13 @@ function hideHoleComplete(){
   $('#holeComplete').setAttribute('aria-hidden','true');
 }
 function finishHole(score){if(!state.course)return;hideHoleComplete();const hole=state.course.holes[state.holeIndex];state.results.push({name:hole.name,par:hole.par,score});state.holeIndex++;if(state.holeIndex>=state.course.holes.length){showScore();return}loadHole()}
-function showScore(){show('score');const par=state.results.reduce((a,r)=>a+r.par,0);const score=state.results.reduce((a,r)=>a+r.score,0);const diff=score-par;$('#finalScore').textContent=diff===0?'E':diff>0?`+${diff}`:`${diff}`;$('#finalCode').textContent=state.course.code;$('#scoreRows').innerHTML=state.results.map((r,i)=>`<div class="score-row"><span>${i+1}. ${escapeHtml(r.name)}</span><span>Par ${r.par}</span><span>${r.score}</span></div>`).join('')}
+function showScore(){
+  trackGolf("Golf - Round Completed",{
+    challenge:state.course?.code||null,
+    totalStrokes:state.results.reduce((n,r)=>n+(r.score||0),0),
+    totalPar:state.results.reduce((n,r)=>n+(r.par||0),0)
+  });
+  show('score');const par=state.results.reduce((a,r)=>a+r.par,0);const score=state.results.reduce((a,r)=>a+r.score,0);const diff=score-par;$('#finalScore').textContent=diff===0?'E':diff>0?`+${diff}`:`${diff}`;$('#finalCode').textContent=state.course.code;$('#scoreRows').innerHTML=state.results.map((r,i)=>`<div class="score-row"><span>${i+1}. ${escapeHtml(r.name)}</span><span>Par ${r.par}</span><span>${r.score}</span></div>`).join('')}
 
 function distanceM(a,b){const R=6371000,toRad=x=>x*Math.PI/180;const p1=toRad(a.lat),p2=toRad(b.lat),dp=toRad(b.lat-a.lat),dl=toRad(b.lng-a.lng);const h=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
 function bearing(a,b){const r=Math.PI/180,d=180/Math.PI,p1=a.lat*r,p2=b.lat*r,dl=(b.lng-a.lng)*r;return norm360(Math.atan2(Math.sin(dl)*Math.cos(p2),Math.cos(p1)*Math.sin(p2)-Math.sin(p1)*Math.cos(p2)*Math.cos(dl))*d)}
@@ -466,7 +491,8 @@ $('#mulliganBtn').addEventListener('click',mulligan);
 $('#giveUpBtn').addEventListener('click',()=>{if(!state.shotBusy){state.holeFinishing=true;setShotEnabled(false);showHoleComplete(state.course.holes[state.holeIndex].par+3)}});
 $('#nextHoleBtn').addEventListener('click',()=>finishHole(Number($('#nextHoleBtn').dataset.score)));
 $('#replayBtn').addEventListener('click',()=>startCourse(state.course.code));
-$('#shareBtn').addEventListener('click',async()=>{if(!state.course){toast('Start a course first');return}const txt=`⛳ StreetView Golf challenge ${state.course.code}\n${challengeUrl(state.course.code,state.course.version)}`;try{await navigator.clipboard.writeText(txt);toast('Challenge link copied')}catch{toast(state.course.code)}});
+$('#shareBtn').addEventListener('click',async()=>{if(!state.course){toast('Start a course first');return}const txt=`⛳ StreetView Golf challenge ${state.course.code}\n${challengeUrl(state.course.code,state.course.version)}`;try{await trackGolf("Golf - Challenge Shared",{challenge:state.course?.code||new URL(location.href).searchParams.get("c")||null});
+  navigator.clipboard.writeText(txt);toast('Challenge link copied')}catch{toast(state.course.code)}});
 $('#copyResultBtn').addEventListener('click',async()=>{const total=state.results.reduce((a,r)=>a+r.score,0),par=state.results.reduce((a,r)=>a+r.par,0),d=total-par;const txt=`⛳ StreetView Golf ${state.course.code}: ${d===0?'E':d>0?'+'+d:d} (${total}/${par})`;try{await navigator.clipboard.writeText(txt);toast('Score copied')}catch{}});
 
 renderConfiguredChallenges();updateShotUI();

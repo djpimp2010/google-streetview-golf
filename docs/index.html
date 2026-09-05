@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Tom &amp; Nat's Google Street View Golf</title>
+  <meta name="description" content="Tom &amp; Nat's Google Street View Golf — golf, except the fairway is Google Street View." />
+  <link rel="stylesheet" href="style.css?v=14" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand"><span class="ball">●</span><strong>Tom &amp; Nat's Google Street View Golf</strong></div>
+      <div class="top-actions">
+        <button id="shareBtn" class="ghost">Share course</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="welcome" class="screen active landing-screen">
+        <div class="landing-wrap">
+          <section class="hero landing-hero">
+            <div class="eyebrow">TOM &amp; NAT'S GOOGLE STREET VIEW GOLF<br />NOT MADE BY TOM &amp; NAT!</div>
+            <h1>FORE.<br><span>Wrong turn.</span></h1>
+            <p>Aim by dragging Google Street View. Pick a club, set the power, then fire a golf ball into the real world. One swing is one stroke. Your next Street View position is where the ball lands.</p>
+            <div class="hero-actions">
+              <button id="playBtn" class="primary">Play a random 9</button>
+              <button id="dailyBtn" class="secondary">Play today's course</button>
+            </div>
+            <div class="join-box">
+              <input id="joinCode" maxlength="12" placeholder="Enter a challenge code" autocomplete="off" />
+              <button id="joinBtn">Play code</button>
+            </div>
+          </section>
+
+          <section class="home-section how-to">
+            <div class="section-copy">
+              <div class="eyebrow">HOW TO PLAY</div>
+              <h2>Aim and fire through buildings.</h2>
+              <p>You start on outdoor Google Street View with a hidden pin somewhere nearby. There is no route line. You get distance and bearing; everything else is judgement.</p>
+            </div>
+            <div class="rule-grid">
+              <article><b>01</b><h3>Aim</h3><p>Drag the panorama until the centre reticle points where you want to hit. Looking around costs nothing.</p></article>
+              <article><b>02</b><h3>Swing</h3><p>Choose Driver, Iron or Wedge, set the power, and hit SWING (or Space). The ball visibly flies down your chosen line.</p></article>
+              <article><b>03</b><h3>Land</h3><p>The game moves Street View to the nearest outdoor panorama around the calculated landing point. One swing = one stroke.</p></article>
+              <article><b>⛳</b><h3>Hole out</h3><p>Get within 35 metres of the hidden pin. Nine holes make a round; lowest score wins.</p></article>
+            </div>
+          </section>
+
+          <section class="home-section share-explainer">
+            <div class="section-copy">
+              <div class="eyebrow">CHALLENGE LINKS</div>
+              <h2>Same code. Same nine holes.</h2>
+              <p>Every challenge code deterministically generates the same nine-hole course. Share the URL and everyone who opens it gets the same course and hole order.</p>
+              <p class="example-link"><code>?c=TOMNAT100</code> → challenge code <code>TOMNAT100</code></p>
+            </div>
+          </section>
+
+          <section class="home-section challenge-section">
+            <div class="section-heading">
+              <div><div class="eyebrow">CLUB CHALLENGES</div><h2>Configured courses</h2></div>
+              <p>Published challenges are read from the public site config.</p>
+            </div>
+            <div id="challengeList" class="challenge-list"></div>
+          </section>
+
+          <footer class="site-footer">Tom &amp; Nat's Google Street View Golf · unofficial fan-made game · powered by Google Street View · v14</footer>
+        </div>
+      </section>
+
+      <section id="game" class="screen">
+        <div id="pano"></div>
+
+        <div id="shotCinematic" class="shot-cinematic" aria-hidden="true">
+          <div id="shotMapRotator" class="shot-map-rotator">
+            <div id="shotMap" class="shot-map"></div>
+          </div>
+          <div class="shot-cam-header"><b>SHOT CAM</b><span id="shotCamReadout">—</span></div>
+          <div class="shot-cam-arrow" aria-hidden="true"><span>▲</span><small>AIM</small></div>
+          <div class="shot-cam-vignette"></div>
+        </div>
+
+        <div class="aim-reticle" aria-hidden="true"><span></span><span></span><i></i></div>
+        <div id="flightLayer" class="flight-layer" aria-hidden="true">
+          <div id="flightBall" class="flight-ball"></div>
+          <div id="impactPuff" class="impact-puff">✦</div>
+        </div>
+
+        <div class="hud hud-left">
+          <div class="hole-chip">HOLE <span id="holeNo">1</span> <small>PAR <span id="par">4</span></small></div>
+          <div id="holeLocation" class="hole-location">COUNTRY · TOWN</div>
+          <div class="distance"><span id="distance">—</span><small>metres to pin</small></div>
+          <div class="bearing-row"><div id="compass" class="compass">▲</div><span id="bearing">—</span></div>
+        </div>
+        <div class="hud hud-right">
+          <div class="stroke-label">STROKES</div>
+          <div id="strokes" class="stroke-count">0</div>
+          <button id="mulliganBtn" class="mulligan">Mulligan +2</button>
+        </div>
+
+        <aside class="course-preview" aria-label="Satellite course preview">
+          <div class="course-preview-head"><b>SATELLITE</b><span>AIM UP</span></div>
+          <div class="mini-map-window">
+            <div id="miniMapRotator" class="mini-map-rotator">
+              <div id="miniMap" class="mini-map"></div>
+            </div>
+            <div class="mini-aim-arrow" aria-hidden="true"><span>▲</span></div>
+            <div class="mini-map-key"><span><i class="ball-dot"></i> BALL</span><span><i class="pin-dot"></i> PIN</span></div>
+          </div>
+        </aside>
+
+        <div class="shot-panel">
+          <div class="shot-instruction"><b>AIM AND FIRE THROUGH BUILDINGS</b><span>Centre the reticle, then swing.</span></div>
+          <div class="club-row" role="group" aria-label="Club">
+            <button class="club active" data-club="driver"><b>DRIVER</b><span>220 m</span></button>
+            <button class="club" data-club="iron"><b>IRON</b><span>110 m</span></button>
+            <button class="club" data-club="wedge"><b>WEDGE</b><span>45 m</span></button>
+          </div>
+          <div class="power-row">
+            <label for="powerRange">POWER <strong id="powerValue">80%</strong></label>
+            <input id="powerRange" type="range" min="20" max="100" value="80" step="1" />
+            <div id="shotDistance" class="shot-distance">176 m</div>
+          </div>
+          <button id="swingBtn" class="swing-btn">⛳ SWING <small>SPACE</small></button>
+        </div>
+
+        <div class="bottom-hud">
+          <div id="statusText">Drag to aim. Swing when ready.</div>
+          <div class="progress"><div id="progressBar"></div></div>
+          <button id="giveUpBtn" class="danger-link">Take max score</button>
+        </div>
+
+        <div id="holeComplete" class="hole-complete" aria-hidden="true">
+          <div class="hole-complete-card">
+            <div class="hole-complete-flag">⛳</div>
+            <div class="eyebrow">HOLE COMPLETE</div>
+            <h2 id="holeCompleteTitle">Nice shot.</h2>
+            <div id="holeCompleteResult" class="hole-result">PAR</div>
+            <div class="hole-complete-stats">
+              <div><span>STROKES</span><strong id="holeCompleteStrokes">4</strong></div>
+              <div><span>PAR</span><strong id="holeCompletePar">4</strong></div>
+            </div>
+            <p id="holeCompleteCopy">You found the pin.</p>
+            <button id="nextHoleBtn" class="primary hole-next-btn">NEXT HOLE →</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="score" class="screen">
+        <div class="score-card">
+          <div class="eyebrow">CLUBHOUSE</div>
+          <h2 id="scoreTitle">Round complete</h2>
+          <div id="finalScore" class="final-score">E</div>
+          <div id="scoreRows" class="score-rows"></div>
+          <div class="score-actions">
+            <button id="replayBtn" class="primary">Play again</button>
+            <button id="copyResultBtn" class="secondary">Copy result</button>
+          </div>
+          <p class="tiny">Challenge <code id="finalCode"></code></p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="config.js?v=14"></script>
+  <script src="app.js?v=14"></script>
+</body>
+</html>
